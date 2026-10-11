@@ -173,8 +173,7 @@ export default function App() {
       });
       setSelectedRegionId(null);
     } catch (err) {
-      console.error(err);
-      setErrorMsg(err.message || 'Error processing image. Check backend connection.');
+      setErrorMsg('Failed to process image. Please try again.');
     } finally {
       setProcessing(false);
     }

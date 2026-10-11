@@ -148,10 +148,9 @@ async def process_whiteboard(
                 study_guide = process_whiteboard_with_gemini(enhanced_bytes, api_key=api_key)
                 mode_used = "gemini_multimodal"
             except Exception as e:
-                # If API call fails (rate limit, invalid key), gracefully fallback to CV engine
-                print(f"[Warning] AI generation failed, falling back to CV pipeline: {e}")
+                # If API call fails, cleanly fallback without leaking any credentials
                 study_guide = generate_fallback_study_guide(cv_regions, enhanced_image)
-                study_guide["api_warning"] = str(e)
+                study_guide["api_warning"] = "AI generation unavailable, used local CV engine."
         else:
             study_guide = generate_fallback_study_guide(cv_regions, enhanced_image)
 
@@ -170,10 +169,8 @@ async def process_whiteboard(
             "study_guide": study_guide
         }
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error processing image in vision pipeline.")
 
 
 @app.post("/api/export-tex")
