@@ -76,7 +76,18 @@ Judges explicitly penalize thin API wrappers. Board2TeX implements an authentic 
 * **🎨 Synthetic TikZ & SVG Generation:** Transforms messy hand-drawn boxes, pointer arrows, and graphs into clean, razor-sharp vector diagrams that render in the browser and compile directly in LaTeX.
 * **⚡ Live KaTeX Math Engine:** Real-time equation rendering alongside the source code.
 * **💾 Export Suite:** 1-Click download of raw `.tex` source code, copy to clipboard, or print-ready PDF study sheet.
+* **🧩 1-Click Overleaf Chrome Extension:** Snap an on-screen snipping rectangle over any note or PDF, and it automatically injects compiled LaTeX equations & TikZ figures directly into your active Overleaf editor tab at your cursor position!
 * **🧪 Pre-loaded STEM Demo Library:** Built-in interactive sample (CSE 320 Virtual Memory & Heap Allocation) for instant live judging demos.
+
+---
+
+## 🧩 1-Click Overleaf Chrome Extension Setup (Free)
+
+1. Open Chrome/Brave/Edge and navigate to `chrome://extensions`.
+2. Toggle on **Developer mode** in the top right.
+3. Click **Load unpacked** in the top left.
+4. Select the [`board2tex/extension`](file:///Users/sumitkumar/coding/board2tex/extension) directory.
+5. Open any project on [Overleaf](https://www.overleaf.com), press **Cmd+Shift+X**, drag a box over any math note, and watch it type itself into your document!
 
 ---
 
