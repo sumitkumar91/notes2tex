@@ -127,8 +127,16 @@ async def process_whiteboard(
         enhanced_b64 = encode_image_to_base64(enhanced_image)
 
         # 5. Stage 4: Multi-Modal Synthesis (AI or CV Fallback)
-        # Re-encode enhanced image to JPEG bytes for vision model
-        _, enc_buf = cv2.imencode(".jpg", enhanced_image, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+        # Re-encode enhanced image to JPEG bytes for vision model (scale to max 1600px for speed)
+        eh, ew = enhanced_image.shape[:2]
+        max_dim = 1600
+        if max(eh, ew) > max_dim:
+            scale = max_dim / float(max(eh, ew))
+            ai_input_image = cv2.resize(enhanced_image, (int(ew * scale), int(eh * scale)), interpolation=cv2.INTER_AREA)
+        else:
+            ai_input_image = enhanced_image
+
+        _, enc_buf = cv2.imencode(".jpg", ai_input_image, [int(cv2.IMWRITE_JPEG_QUALITY), 82])
         enhanced_bytes = enc_buf.tobytes()
 
         api_key = x_api_key or os.environ.get("GEMINI_API_KEY")

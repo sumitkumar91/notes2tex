@@ -20,6 +20,20 @@ export default function App() {
   const [copiedTex, setCopiedTex] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (processing) {
+      setElapsedSeconds(0);
+      interval = setInterval(() => {
+        setElapsedSeconds(prev => +(prev + 0.5).toFixed(1));
+      }, 500);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [processing]);
 
   const fileInputRef = useRef(null);
 
@@ -229,20 +243,81 @@ export default function App() {
         />
       </div>
 
-      {/* Processing Spinner Overlay */}
+      {/* Processing Pipeline Modal */}
       {processing && (
-        <div className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4">
-          <div className="relative">
-            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center font-bold text-xs text-cyan-300">
-              CV
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 select-none">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-fade-in">
+            
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
+                <h3 className="font-bold text-base text-white">Compiling Lecture Document</h3>
+              </div>
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
+                {elapsedSeconds}s elapsed
+              </span>
             </div>
-          </div>
-          <div>
-            <h3 className="font-bold text-lg text-white">Running Vision Pipeline</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Homography Rectification &rarr; Glare Suppression &rarr; Layout Segmentation &rarr; TikZ Synthesis
-            </p>
+
+            {/* Stepper Stages */}
+            <div className="space-y-3 text-xs">
+              <div className="flex items-center gap-3">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                  elapsedSeconds >= 1.5 ? 'bg-emerald-500 text-slate-950' : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse'
+                }`}>
+                  {elapsedSeconds >= 1.5 ? '✓' : '1'}
+                </span>
+                <span className={elapsedSeconds >= 1.5 ? 'text-slate-300 font-medium' : 'text-cyan-300 font-semibold'}>
+                  OpenCV 4-Point Homography & Keystoning
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                  elapsedSeconds >= 3.0 ? 'bg-emerald-500 text-slate-950' : elapsedSeconds >= 1.5 ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse' : 'bg-slate-800 text-slate-500'
+                }`}>
+                  {elapsedSeconds >= 3.0 ? '✓' : '2'}
+                </span>
+                <span className={elapsedSeconds >= 3.0 ? 'text-slate-300 font-medium' : elapsedSeconds >= 1.5 ? 'text-cyan-300 font-semibold' : 'text-slate-500'}>
+                  CLAHE Glare Suppression & Ink Normalization
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                  elapsedSeconds >= 14.0 ? 'bg-emerald-500 text-slate-950' : elapsedSeconds >= 3.0 ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse' : 'bg-slate-800 text-slate-500'
+                }`}>
+                  {elapsedSeconds >= 14.0 ? '✓' : '3'}
+                </span>
+                <span className={elapsedSeconds >= 14.0 ? 'text-slate-300 font-medium' : elapsedSeconds >= 3.0 ? 'text-cyan-300 font-semibold' : 'text-slate-500'}>
+                  Multimodal Vision: Transcribing Math & Logic Proofs
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                  elapsedSeconds >= 17.0 ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 animate-pulse' : 'bg-slate-800 text-slate-500'
+                }`}>
+                  4
+                </span>
+                <span className={elapsedSeconds >= 17.0 ? 'text-cyan-300 font-semibold' : 'text-slate-500'}>
+                  Assembling LaTeX Document & KaTeX Engine
+                </span>
+              </div>
+            </div>
+
+            {/* Progress Bar & ETA */}
+            <div className="space-y-1.5 pt-1">
+              <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                <div
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(95, Math.max(10, Math.round((elapsedSeconds / 18.0) * 90)))}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 text-center">
+                Generating full academic LaTeX study guide (~15-18s)...
+              </p>
+            </div>
+
           </div>
         </div>
       )}
