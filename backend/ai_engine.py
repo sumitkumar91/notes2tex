@@ -39,10 +39,14 @@ You must analyze the whiteboard image and output strict JSON with the following 
 }
 
 CRITICAL RULES:
-1. ONLY classify as "diagram" if the region contains a genuine hand-drawn graphical figure, such as a memory layout, flowchart, state machine, graph, binary tree, neural network, or circuit.
-2. Regular handwritten paragraphs, sentences, bullet points, titles, or code listings MUST be classified as "text".
-3. Mathematical formulas, derivations, equations, integrals, matrices, or fractions MUST be classified as "math".
-4. If a whiteboard has NO diagrams and only contains text and math, do NOT invent diagrams! Output only "text" and "math" regions.
+1. ONLY classify as "diagram" if the region contains a genuine hand-drawn graphical figure (memory layout, flowchart, state machine, graph, circuit). NEVER classify text or math as diagram!
+2. REPRESENT THE DOCUMENT LAYOUT AND TEXT EXACTLY AS SHOWN:
+   - For numbered sections or points (e.g., "3. Parenthesis: ...", "4. Variables: ..."), format as \\noindent\\textbf{4. Variables:} ... with continuous prose paragraph text. DO NOT use \\begin{itemize} \\item for numbered paragraphs!
+   - Preserve normal paragraphs as natural text separated by blank lines (\\n\\n), NOT bulleted lists.
+   - Only use \\begin{itemize} if the original image literally has bullet dots or dashes.
+3. INLINE MATHEMATICAL NOTATION:
+   - Wrap all mathematical variables, sets, predicates, comparisons, and formulas in inline math: $VAR = \\{x_1, x_2, \\dots\\}$, $\\mathbf{C} = \\{c_1, c_2, \\dots\\}$, $\\mathbf{P}$, $\\mathcal{L}$, $x < y$, $P(x, y)$, $n < 0$, etc.
+4. If a document has NO diagrams and only contains text and math, do NOT invent diagrams! Output only "text" and "math" regions.
 5. Return ONLY valid JSON without markdown fences."""
 
 
@@ -66,7 +70,7 @@ def process_whiteboard_with_gemini(
                 data=image_bytes,
                 mime_type="image/jpeg",
             ),
-            "Analyze this lecture whiteboard. Accurately separate text notes, mathematical equations, and any diagrams. Output strict JSON according to the system instructions. Do NOT misclassify regular text notes as diagrams."
+            "Transcribe this textbook / whiteboard document into publication-ready LaTeX. Represent layout, paragraphs, and numbered items EXACTLY as shown. Do NOT use \\item or \\begin{itemize} for regular text or numbered paragraphs. Preserve all inline math."
         ],
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
@@ -95,6 +99,7 @@ def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image: Any) 
     import cv2
     import numpy as np
     import pytesseract
+    import re
 
     processed_regions = []
     latex_sections = []
@@ -126,7 +131,6 @@ def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image: Any) 
         if reg_type == "math":
             # Extract math expressions
             math_expr = clean_text.replace("\n", " ") if clean_text else r"f(x) = \sum_{i=1}^{n} w_i x_i + b"
-            # Format clean LaTeX math
             r["label"] = f"Mathematical Expression {idx}"
             r["math_expressions"] = [math_expr]
             r["latex"] = f"""\\begin{{equation*}}
@@ -157,17 +161,36 @@ def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image: Any) 
             latex_sections.append(f"\\subsection*{{Diagram {idx}}}\n" + r["tikz"])
 
         else:
-            # TEXT REGION
+            # TEXT REGION - Format as natural paragraphs, NEVER force itemize!
             first_line = lines[0] if lines else f"Section {idx}"
-            if idx == 1 and len(first_line) < 50:
+            if idx == 1 and ("chapter" in first_line.lower() or "introduction" in first_line.lower()):
                 lecture_title = first_line
 
-            bullet_items = "\n".join([f"    \\item {line}" for line in lines]) if lines else f"    \\item Notes from section {idx}"
-            r["label"] = first_line[:40] if first_line else f"Lecture Notes {idx}"
-            r["latex"] = f"""\\begin{{itemize}}
-{bullet_items}
-\\end{{itemize}}"""
-            latex_sections.append(f"\\subsection*{{{r['label']}}}\n" + r["latex"])
+            # Group lines into paragraphs and handle numbered items properly
+            formatted_paragraphs = []
+            curr_p = []
+            for line in lines:
+                # If line starts with a number like "3. Parenthesis:" or "4. Variables:"
+                if re.match(r'^\d+\.\s*', line):
+                    if curr_p:
+                        formatted_paragraphs.append(" ".join(curr_p))
+                        curr_p = []
+                    # Check for colon
+                    if ":" in line:
+                        prefix, rest = line.split(":", 1)
+                        curr_p.append(f"\\noindent\\textbf{{{prefix}:}}{rest}")
+                    else:
+                        curr_p.append(f"\\noindent\\textbf{{{line}}}")
+                else:
+                    curr_p.append(line)
+
+            if curr_p:
+                formatted_paragraphs.append(" ".join(curr_p))
+
+            tex_body = "\n\n".join(formatted_paragraphs) if formatted_paragraphs else clean_text
+            r["label"] = first_line[:40] if first_line else f"Section {idx}"
+            r["latex"] = tex_body
+            latex_sections.append(tex_body)
 
         processed_regions.append(r)
 
