@@ -88,6 +88,12 @@ async def process_whiteboard(
         else:
             raise HTTPException(status_code=400, detail="No image file or base64 provided.")
 
+        try:
+            with open("backend/last_upload.jpg", "wb") as f:
+                f.write(image_bytes)
+        except Exception:
+            pass
+
         raw_image = decode_image_from_bytes(image_bytes)
         h, w = raw_image.shape[:2]
 
@@ -126,10 +132,10 @@ async def process_whiteboard(
             except Exception as e:
                 # If API call fails (rate limit, invalid key), gracefully fallback to CV engine
                 print(f"[Warning] AI generation failed, falling back to CV pipeline: {e}")
-                study_guide = generate_fallback_study_guide(cv_regions, enhanced_image.shape)
+                study_guide = generate_fallback_study_guide(cv_regions, enhanced_image)
                 study_guide["api_warning"] = str(e)
         else:
-            study_guide = generate_fallback_study_guide(cv_regions, enhanced_image.shape)
+            study_guide = generate_fallback_study_guide(cv_regions, enhanced_image)
 
         return {
             "success": True,

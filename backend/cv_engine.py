@@ -150,9 +150,9 @@ def enhance_whiteboard_contrast(image: np.ndarray) -> np.ndarray:
 def segment_whiteboard_regions(image: np.ndarray) -> List[Dict[str, Any]]:
     """
     Segments the whiteboard into discrete spatial bounding boxes and classifies each:
-    - 'text': Horizontal linear stroke alignment, typical aspect ratio
-    - 'math': Compact symbolic density, fraction bars, superscripts/subscripts
-    - 'diagram': Boxes, arrows, interconnected graph components, loops
+    - 'text': Horizontal linear stroke alignment, line periodicity, bullet points
+    - 'math': Compact symbolic density, fraction bars, superscripts/subscripts, operators
+    - 'diagram': Boxes, arrows, interconnected graph components, loops with large area
     """
     h, w = image.shape[:2]
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -165,60 +165,104 @@ def segment_whiteboard_regions(image: np.ndarray) -> List[Dict[str, Any]]:
     # Remove speckle noise
     clean_mask = cv2.medianBlur(thresh, 3)
 
-    # Horizontal dilation to merge text into lines, vertical dilation for equations
-    merge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 15))
-    dilated = cv2.dilate(clean_mask, merge_kernel, iterations=2)
+    # Use horizontal-biased dilation: merges words into lines without fusing vertical blocks
+    line_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 4))
+    dilated_lines = cv2.dilate(clean_mask, line_kernel, iterations=2)
+
+    # Moderate block grouping
+    block_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (12, 10))
+    dilated = cv2.dilate(dilated_lines, block_kernel, iterations=1)
 
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     raw_boxes = []
-    min_area = (w * h) * 0.003  # Filter out tiny smudges
+    min_area = (w * h) * 0.002  # Filter out tiny smudges
 
     for c in contours:
         x, y, bw, bh = cv2.boundingRect(c)
         area = bw * bh
-        if area >= min_area and bw > 30 and bh > 20:
+        if area >= min_area and bw > 35 and bh > 18:
             raw_boxes.append((x, y, bw, bh))
 
-    # Merge overlapping or touching bounding boxes
-    merged_boxes = merge_bounding_boxes(raw_boxes, h_margin=20, v_margin=15)
+    # Merge overlapping or tightly proximate bounding boxes
+    merged_boxes = merge_bounding_boxes(raw_boxes, h_margin=15, v_margin=10)
 
     # Classify each region by geometric & stroke topology features
     regions = []
     for idx, (x, y, bw, bh) in enumerate(merged_boxes):
         roi_mask = clean_mask[y:y+bh, x:x+bw]
+        roi_area = float(bw * bh + 1e-5)
         ink_pixels = cv2.countNonZero(roi_mask)
-        density = ink_pixels / float(bw * bh + 1e-5)
+        density = ink_pixels / roi_area
         aspect_ratio = bw / float(bh + 1e-5)
 
-        # Classification heuristics based on stroke topology:
-        # Diagrams usually have large areas, low-to-medium stroke density, high connectivity (arrows/boxes)
-        # Math has moderate density with fraction lines or matrices
-        # Text has wide aspect ratio (> 2.5) with rhythmic gaps
-        modality = "text"
-        confidence = 0.85
+        # 1. Horizontal Projection Profile: count horizontal text lines
+        row_sums = np.sum(roi_mask > 0, axis=1)
+        # Smooth projection
+        if len(row_sums) > 5:
+            smooth_sums = np.convolve(row_sums, np.ones(5)/5.0, mode='same')
+            # Detect peaks (lines of handwriting)
+            peaks = 0
+            mean_val = np.mean(smooth_sums)
+            is_peak = False
+            for val in smooth_sums:
+                if val > mean_val * 1.2:
+                    if not is_peak:
+                        peaks += 1
+                        is_peak = True
+                elif val < mean_val * 0.8:
+                    is_peak = False
+        else:
+            peaks = 1
 
-        if aspect_ratio < 2.0 and (bw > w * 0.25 or bh > h * 0.25):
-            # Check for closed loops / geometric shapes (characteristic of boxes, nodes, state machines)
-            roi_contours, hierarchy = cv2.findContours(roi_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-            holes = 0
-            if hierarchy is not None:
-                # Count child contours representing holes/boxes
-                holes = sum(1 for h_item in hierarchy[0] if h_item[3] != -1)
+        # 2. Check for LARGE structural boxes/circles (NOT letter loops like 'o', 'e')
+        roi_contours, hierarchy = cv2.findContours(roi_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        large_holes = 0
+        if hierarchy is not None:
+            for c_idx, h_item in enumerate(hierarchy[0]):
+                # h_item[3] != -1 means it is an internal contour / hole
+                if h_item[3] != -1:
+                    hole_area = cv2.contourArea(roi_contours[c_idx])
+                    # Must be a drawn geometric container (at least 3.5% of total box area)
+                    if hole_area > 0.035 * roi_area:
+                        large_holes += 1
 
-            if holes >= 2 or (bw > w * 0.3 and bh > h * 0.25):
-                modality = "diagram"
-                confidence = 0.92
-            else:
-                modality = "math"
-                confidence = 0.88
-        elif 0.8 <= aspect_ratio <= 3.5 and bh > h * 0.08:
-            # Likely mathematical formula or equation block
+        # 3. Detect long straight geometric lines / arrows (Hough Lines)
+        lines = cv2.HoughLinesP(roi_mask, 1, np.pi/180, threshold=40, minLineLength=int(min(bw, bh) * 0.45), maxLineGap=10)
+        has_long_lines = lines is not None and len(lines) >= 2
+
+        # Robust classification decision tree:
+        # Strict diagram rule: MUST have large box enclosures OR long arrow vectors, and NOT be rhythmic text
+        is_diagram = False
+        if bw > w * 0.18 and bh > h * 0.15 and density < 0.18:
+            if (large_holes >= 1 and has_long_lines) or large_holes >= 2:
+                is_diagram = True
+
+        # Math formula rule:
+        # Single or 2 lines, moderate aspect ratio, operators or fraction bars
+        is_math = False
+        if not is_diagram:
+            if 0.9 <= aspect_ratio <= 3.8 and (bh < h * 0.22):
+                # Check for horizontal fraction line:
+                mid_y = bh // 2
+                mid_band = roi_mask[max(0, mid_y-5):min(bh, mid_y+5), :]
+                mid_proj = np.sum(mid_band > 0, axis=0)
+                has_fraction_bar = np.max(mid_proj) > bw * 0.5
+
+                if has_fraction_bar or peaks <= 2:
+                    # If it's a short 1-2 line block with math-like aspect ratio
+                    if aspect_ratio < 3.2 and peaks <= 2:
+                        is_math = True
+
+        if is_diagram:
+            modality = "diagram"
+            confidence = 0.91
+        elif is_math:
             modality = "math"
-            confidence = 0.87
+            confidence = 0.88
         else:
             modality = "text"
-            confidence = 0.90
+            confidence = 0.93
 
         regions.append({
             "id": f"region-{idx + 1}",
@@ -239,7 +283,7 @@ def segment_whiteboard_regions(image: np.ndarray) -> List[Dict[str, Any]]:
         })
 
     # Sort regions topologically (reading order: top-to-bottom, column-grouped)
-    regions.sort(key=lambda r: (r["bbox"]["y"] // 80, r["bbox"]["x"]))
+    regions.sort(key=lambda r: (r["bbox"]["y"] // 90, r["bbox"]["x"]))
 
     # Re-assign sequential IDs in reading order
     for new_idx, r in enumerate(regions):

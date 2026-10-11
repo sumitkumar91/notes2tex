@@ -7,6 +7,8 @@ import OpenCVInspector from './components/OpenCVInspector';
 import ApiKeyModal from './components/ApiKeyModal';
 import { BookOpen, FileCode, Cpu, Loader2, AlertCircle } from 'lucide-react';
 
+const API_BASE = 'http://127.0.0.1:8008';
+
 export default function App() {
   const [samples, setSamples] = useState([]);
   const [activeSampleId, setActiveSampleId] = useState('sample-cse320');
@@ -31,9 +33,11 @@ export default function App() {
 
   // Fetch pre-loaded samples on start
   useEffect(() => {
-    fetch('/api/samples')
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchSamples = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/samples`);
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        const data = await res.json();
         if (data.samples && data.samples.length > 0) {
           setSamples(data.samples);
           const cse320 = data.samples[0];
@@ -50,10 +54,35 @@ export default function App() {
             }
           });
         }
-      })
-      .catch((err) => {
-        console.warn('Could not load samples from backend:', err);
-      });
+      } catch (err) {
+        console.warn('Could not load samples from backend directly, trying proxy:', err);
+        // Fallback to proxy
+        try {
+          const res2 = await fetch('/api/samples');
+          const data2 = await res2.json();
+          if (data2.samples?.length > 0) {
+            setSamples(data2.samples);
+            const cse320 = data2.samples[0];
+            setCurrentData({
+              raw_image: cse320.raw_image,
+              enhanced_image: cse320.raw_image,
+              opencv_metrics: cse320.opencv_metrics,
+              study_guide: {
+                title: cse320.title,
+                subject: cse320.subject,
+                summary: "Extracted from lecture whiteboard on memory hierarchy, heap boundary tags, and explicit doubly linked free lists.",
+                regions: cse320.regions,
+                latex_full: cse320.latex_full
+              }
+            });
+          }
+        } catch (e) {
+          console.error('All sample fetch attempts failed:', e);
+        }
+      }
+    };
+
+    fetchSamples();
   }, []);
 
   const handleSelectSample = (sampleId) => {
@@ -101,11 +130,21 @@ export default function App() {
     }
 
     try {
-      const res = await fetch('/api/process', {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
+      let res;
+      try {
+        res = await fetch(`${API_BASE}/api/process`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      } catch (directErr) {
+        console.warn('Direct connection failed, attempting proxy:', directErr);
+        res = await fetch('/api/process', {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      }
 
       const data = await res.json();
       if (!res.ok) {
@@ -121,7 +160,7 @@ export default function App() {
       setSelectedRegionId(null);
     } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Error processing image.');
+      setErrorMsg(err.message || 'Error processing image. Check backend connection.');
     } finally {
       setProcessing(false);
     }

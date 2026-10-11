@@ -38,13 +38,12 @@ You must analyze the whiteboard image and output strict JSON with the following 
   "latex_full": "A complete, compilable LaTeX document using \\documentclass[11pt]{article}, including amsmath, amssymb, tikz, tcolorbox, and all necessary packages."
 }
 
-Rules:
-1. For mathematical formulas: Use clean, standardized LaTeX (e.g. \\begin{align*}, \\sum, \\int, \\frac, \\mathbf).
-2. For hand-drawn diagrams (memory frames, linked lists, trees, graphs, neural nets, circuit blocks):
-   - Provide clean, professional LaTeX TikZ code using nodes and styled edges.
-   - Provide a companion <svg>...</svg> block so it can render seamlessly in modern web browsers!
-3. For text notes: Format into clean LaTeX \\section, \\subsection, or \\begin{itemize}.
-4. Return ONLY valid JSON without markdown fences."""
+CRITICAL RULES:
+1. ONLY classify as "diagram" if the region contains a genuine hand-drawn graphical figure, such as a memory layout, flowchart, state machine, graph, binary tree, neural network, or circuit.
+2. Regular handwritten paragraphs, sentences, bullet points, titles, or code listings MUST be classified as "text".
+3. Mathematical formulas, derivations, equations, integrals, matrices, or fractions MUST be classified as "math".
+4. If a whiteboard has NO diagrams and only contains text and math, do NOT invent diagrams! Output only "text" and "math" regions.
+5. Return ONLY valid JSON without markdown fences."""
 
 
 def process_whiteboard_with_gemini(
@@ -52,7 +51,7 @@ def process_whiteboard_with_gemini(
     api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Calls Gemini 2.5 Flash / Pro Vision to analyze and compile whiteboard to LaTeX and TikZ.
+    Calls Gemini 2.5 Flash Vision to analyze and compile whiteboard to LaTeX and TikZ.
     """
     key = api_key or os.environ.get("GEMINI_API_KEY")
     if not key:
@@ -67,12 +66,12 @@ def process_whiteboard_with_gemini(
                 data=image_bytes,
                 mime_type="image/jpeg",
             ),
-            "Analyze this lecture whiteboard. Identify all text, math formulas, and diagrams. Convert them into clean LaTeX and TikZ following the requested JSON schema."
+            "Analyze this lecture whiteboard. Accurately separate text notes, mathematical equations, and any diagrams. Output strict JSON according to the system instructions. Do NOT misclassify regular text notes as diagrams."
         ],
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
             response_mime_type="application/json",
-            temperature=0.2,
+            temperature=0.1,
         )
     )
 
@@ -88,31 +87,55 @@ def process_whiteboard_with_gemini(
     return data
 
 
-def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image_shape: tuple) -> Dict[str, Any]:
+def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image: Any) -> Dict[str, Any]:
     """
-    Fallback synthesis when no API key is provided:
-    Maps OpenCV detected bounding boxes into a formatted LaTeX document and preview.
+    Fallback synthesis using local Computer Vision & Tesseract OCR:
+    Extracts actual words and mathematical text from cropped regions.
     """
-    h, w = image_shape[:2]
-    processed_regions = []
+    import cv2
+    import numpy as np
+    import pytesseract
 
+    processed_regions = []
     latex_sections = []
+    lecture_title = "Whiteboard Lecture Notes"
 
     for r in cv_regions:
         reg_type = r["type"]
         idx = r["reading_order"]
+        bx = r["bbox"]["x"]
+        by = r["bbox"]["y"]
+        bw = r["bbox"]["width"]
+        bh = r["bbox"]["height"]
+
+        # Crop region for Tesseract OCR
+        cropped = None
+        ocr_text = ""
+        if isinstance(image, np.ndarray):
+            cropped = image[max(0, by):min(image.shape[0], by+bh), max(0, bx):min(image.shape[1], bx+bw)]
+            if cropped.size > 0:
+                try:
+                    # Run Tesseract with auto page segmentation
+                    ocr_text = pytesseract.image_to_string(cropped, config='--psm 6').strip()
+                except Exception as e:
+                    print(f"OCR warning: {e}")
+
+        clean_text = ocr_text if ocr_text else f"Extracted notes from section {idx}"
+        lines = [line.strip() for line in clean_text.split("\n") if line.strip()]
 
         if reg_type == "math":
-            math_expr = r"\int_{0}^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2}"
+            # Extract math expressions
+            math_expr = clean_text.replace("\n", " ") if clean_text else r"f(x) = \sum_{i=1}^{n} w_i x_i + b"
+            # Format clean LaTeX math
+            r["label"] = f"Mathematical Expression {idx}"
             r["math_expressions"] = [math_expr]
-            r["label"] = f"Mathematical Derivation (Block {idx})"
             r["latex"] = f"""\\begin{{equation*}}
 {math_expr}
 \\end{{equation*}}"""
-            latex_sections.append(f"\\section*{{Equation {idx}}}\n" + r["latex"])
+            latex_sections.append(f"\\subsection*{{Equation {idx}}}\n" + r["latex"])
 
         elif reg_type == "diagram":
-            r["label"] = f"Structural System Diagram (Block {idx})"
+            r["label"] = f"Structural System Diagram {idx}"
             r["tikz"] = r"""\begin{tikzpicture}[node distance=2cm, auto, thick]
   \node[draw, rectangle, fill=blue!10, rounded corners] (nodeA) {State A};
   \node[draw, rectangle, fill=green!10, rounded corners, right of=nodeA] (nodeB) {State B};
@@ -131,36 +154,41 @@ def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image_shape:
   <rect x="240" y="35" width="100" height="50" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
   <text x="290" y="65" text-anchor="middle" fill="#f8fafc" font-size="12">Component B</text>
 </svg>"""
-            latex_sections.append(f"\\section*{{Diagram {idx}}}\n" + r["tikz"])
+            latex_sections.append(f"\\subsection*{{Diagram {idx}}}\n" + r["tikz"])
 
         else:
-            r["label"] = f"Lecture Notes (Block {idx})"
+            # TEXT REGION
+            first_line = lines[0] if lines else f"Section {idx}"
+            if idx == 1 and len(first_line) < 50:
+                lecture_title = first_line
+
+            bullet_items = "\n".join([f"    \\item {line}" for line in lines]) if lines else f"    \\item Notes from section {idx}"
+            r["label"] = first_line[:40] if first_line else f"Lecture Notes {idx}"
             r["latex"] = f"""\\begin{{itemize}}
-  \\item Key concept extracted from spatial region {idx}.
-  \\item Bounding box: ({r['bbox']['x']}, {r['bbox']['y']}) with width {r['bbox']['width']}px.
+{bullet_items}
 \\end{{itemize}}"""
-            latex_sections.append(f"\\section*{{Notes {idx}}}\n" + r["latex"])
+            latex_sections.append(f"\\subsection*{{{r['label']}}}\n" + r["latex"])
 
         processed_regions.append(r)
 
-    full_tex = r"""\documentclass[11pt, a4paper]{article}
-\usepackage{amsmath, amssymb, tikz, geometry}
-\geometry{margin=1in}
-\title{\textbf{Board2TeX Lecture Notes}}
-\author{Compiled from Whiteboard Vision Analysis}
-\date{\today}
+    full_tex = f"""\\documentclass[11pt, a4paper]{{article}}
+\\usepackage{{amsmath, amssymb, tikz, geometry}}
+\\geometry{{margin=1in}}
+\\title{{\\textbf{{{lecture_title}}}}}
+\\author{{Compiled with Board2TeX Vision Engine}}
+\\date{{\\today}}
 
-\begin{document}
-\maketitle
+\\begin{{document}}
+\\maketitle
 
 """ + "\n\n".join(latex_sections) + r"""
 
 \end{document}"""
 
     return {
-        "title": "Whiteboard Lecture Analysis",
+        "title": lecture_title,
         "subject": "STEM Lecture Notes",
-        "summary": f"Detected {len(cv_regions)} spatial regions ({sum(1 for r in cv_regions if r['type']=='math')} math, {sum(1 for r in cv_regions if r['type']=='diagram')} diagrams, {sum(1 for r in cv_regions if r['type']=='text')} text blocks).",
+        "summary": f"Detected {len(cv_regions)} spatial regions ({sum(1 for r in cv_regions if r['type']=='text')} text blocks, {sum(1 for r in cv_regions if r['type']=='math')} math expressions, {sum(1 for r in cv_regions if r['type']=='diagram')} diagrams).",
         "regions": processed_regions,
         "latex_full": full_tex
     }
