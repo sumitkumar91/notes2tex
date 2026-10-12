@@ -53,3 +53,6 @@ backend/*.png
 # OS files
 .DS_Store
 Thumbs.db
+
+# Submission packaging
+notes2tex-submission*

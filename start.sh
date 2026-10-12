@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Notes2TeX - Startup Script
-# Launches both FastAPI Backend and Vite Frontend concurrently
+# Automatically sets up dependencies and launches both FastAPI Backend and Vite Frontend concurrently.
 
 set -e
 
@@ -10,14 +10,31 @@ echo "=========================================================="
 echo "Notes2TeX — Notes & Whiteboards to Compiled LaTeX"
 echo "=========================================================="
 
-# Check Python venv
+# 1. Ensure Python virtual environment and dependencies
 if [ ! -d "$DIR/venv" ]; then
-    echo "[ERROR] Virtual environment not found in $DIR/venv."
-    exit 1
+    echo "[SETUP] Creating Python virtual environment in $DIR/venv..."
+    python3 -m venv "$DIR/venv"
+    source "$DIR/venv/bin/activate"
+    echo "[SETUP] Installing Python dependencies from requirements.txt..."
+    pip install --quiet --upgrade pip
+    pip install --quiet -r "$DIR/requirements.txt"
+else
+    source "$DIR/venv/bin/activate"
 fi
 
+# 2. Ensure frontend dependencies
+if [ ! -d "$DIR/frontend/node_modules" ]; then
+    echo "[SETUP] Installing frontend node_modules..."
+    (cd "$DIR/frontend" && npm install --silent)
+fi
+
+# 3. Create .env if missing
+if [ ! -f "$DIR/.env" ]; then
+    touch "$DIR/.env"
+fi
+
+echo ""
 echo "Starting FastAPI Backend on http://127.0.0.1:8008..."
-source "$DIR/venv/bin/activate"
 python3 -m uvicorn main:app --app-dir "$DIR/backend" --host 127.0.0.1 --port 8008 --reload &
 BACKEND_PID=$!
 
