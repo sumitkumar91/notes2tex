@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Board2TeX — 1-Click Overleaf LaTeX Injector",
+  "name": "Notes2TeX — 1-Click Overleaf LaTeX Injector",
   "version": "1.0.0",
   "description": "Snap a screenshot of any handwritten note or whiteboard and automatically inject compiled LaTeX & TikZ into Overleaf.",
   "icons": {
@@ -15,9 +15,7 @@
     "tabs"
   ],
   "host_permissions": [
-    "*://*.overleaf.com/*",
-    "http://127.0.0.1:8008/*",
-    "http://localhost:8008/*"
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",

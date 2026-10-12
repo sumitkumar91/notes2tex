@@ -1,5 +1,5 @@
 """
-Board2TeX - FastAPI Vision & LaTeX Compilation Backend
+Notes2TeX - FastAPI Vision & LaTeX Compilation Backend
 """
 
 import os
@@ -36,8 +36,8 @@ from ai_engine import (
 from samples import get_all_samples
 
 app = FastAPI(
-    title="Board2TeX API",
-    description="Messy Whiteboard to Compiled LaTeX Study Guide Vision Pipeline",
+    title="Notes2TeX API",
+    description="Handwritten Notes & Whiteboards to Compiled LaTeX Study Guide Vision Pipeline",
     version="1.0.0"
 )
 
@@ -57,7 +57,7 @@ def health_check():
         "status": "healthy",
         "opencv_version": cv2.__version__,
         "gemini_api_configured": bool(os.environ.get("GEMINI_API_KEY")),
-        "service": "Board2TeX Backend"
+        "service": "Notes2TeX Backend"
     }
 
 
@@ -76,10 +76,12 @@ class ProcessRequest(BaseModel):
 async def process_whiteboard(
     file: Optional[UploadFile] = File(None),
     image_base64: Optional[str] = Form(None),
+    page: Optional[int] = Form(1),
     x_api_key: Optional[str] = Header(None, alias="X-Gemini-Key")
 ):
     """
     Main Computer Vision & Generative AI pipeline:
+    Supports both Image and PDF files (renders PDF pages at 300 DPI).
     1. OpenCV Perspective Correction & Keystoning
     2. Adaptive Illumination Normalization & Glare Removal
     3. Spatial Layout & Region Modality Classification (Text / Math / Diagram)
@@ -104,7 +106,28 @@ async def process_whiteboard(
         except Exception:
             pass
 
-        raw_image = decode_image_from_bytes(image_bytes)
+        # Check if input is a PDF
+        total_pdf_pages = 1
+        current_pdf_page = 1
+        is_pdf = image_bytes.startswith(b"%PDF") or (file and file.filename and file.filename.lower().endswith(".pdf"))
+
+        if is_pdf:
+            import pypdfium2 as pdfium
+            doc = pdfium.PdfDocument(image_bytes)
+            total_pdf_pages = len(doc)
+            target_idx = max(0, min(total_pdf_pages - 1, (page or 1) - 1))
+            current_pdf_page = target_idx + 1
+            rendered_pil = doc[target_idx].render(scale=2.0).to_pil()
+            rgb_arr = np.array(rendered_pil)
+            if len(rgb_arr.shape) == 3 and rgb_arr.shape[2] == 4:
+                raw_image = cv2.cvtColor(rgb_arr, cv2.COLOR_RGBA2BGR)
+            elif len(rgb_arr.shape) == 3 and rgb_arr.shape[2] == 3:
+                raw_image = cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
+            else:
+                raw_image = cv2.cvtColor(rgb_arr, cv2.COLOR_GRAY2BGR)
+        else:
+            raw_image = decode_image_from_bytes(image_bytes)
+
         h, w = raw_image.shape[:2]
 
         # 2. Stage 1: Computer Vision Keystoning / Perspective Warp
@@ -146,13 +169,18 @@ async def process_whiteboard(
         if api_key:
             try:
                 study_guide = process_whiteboard_with_gemini(enhanced_bytes, api_key=api_key)
-                mode_used = "gemini_multimodal"
+                mode_used = study_guide.get("model_used", "gemini_multimodal")
             except Exception as e:
-                # If API call fails, cleanly fallback without leaking any credentials
+                # If API call fails (rate limit, invalid key), gracefully fallback to CV engine
+                print(f"[Warning] AI generation failed, falling back to CV pipeline: {e}")
                 study_guide = generate_fallback_study_guide(cv_regions, enhanced_image)
-                study_guide["api_warning"] = "AI generation unavailable, used local CV engine."
+                study_guide["is_fallback"] = True
+                study_guide["fallback_reason"] = str(e)
+                mode_used = "cv_fallback"
         else:
             study_guide = generate_fallback_study_guide(cv_regions, enhanced_image)
+            study_guide["is_fallback"] = True
+            study_guide["fallback_reason"] = "No GEMINI_API_KEY provided. Running offline local OCR."
 
         return {
             "success": True,
@@ -166,11 +194,18 @@ async def process_whiteboard(
             },
             "rectified_image": rectified_b64,
             "enhanced_image": enhanced_b64,
+            "pdf_info": {
+                "is_pdf": is_pdf,
+                "total_pages": total_pdf_pages,
+                "current_page": current_pdf_page
+            },
             "study_guide": study_guide
         }
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Error processing image in vision pipeline.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/export-tex")

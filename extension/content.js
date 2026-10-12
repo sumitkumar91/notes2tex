@@ -1,5 +1,5 @@
 /**
- * Board2TeX - Overleaf Editor Injection Content Script
+ * Notes2TeX - Overleaf Editor Injection Content Script
  * Injects compiled LaTeX and TikZ directly into the active Overleaf CodeMirror/Ace editor.
  */
 
@@ -40,7 +40,7 @@ function injectIntoOverleaf(latexText) {
         return true;
       }
     } catch (e) {
-      console.warn("[Board2TeX] Range insertion fallback:", e);
+      console.warn("[Notes2TeX] Range insertion fallback:", e);
     }
   }
 
@@ -62,11 +62,11 @@ function injectIntoOverleaf(latexText) {
 }
 
 function showInjectionToast(success, label) {
-  const existing = document.getElementById("board2tex-toast");
+  const existing = document.getElementById("notes2tex-toast");
   if (existing) existing.remove();
 
   const toast = document.createElement("div");
-  toast.id = "board2tex-toast";
+  toast.id = "notes2tex-toast";
   toast.style.cssText = `
     position: fixed;
     bottom: 24px;
@@ -86,15 +86,13 @@ function showInjectionToast(success, label) {
     gap: 10px;
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
-    animation: b2t-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   `;
 
-  const icon = success ? "📐 ⚡" : "⚠️";
   const text = success
-    ? `<strong>Board2TeX:</strong> Injected ${label} into Overleaf!`
-    : `<strong>Board2TeX:</strong> Click inside Overleaf editor first.`;
+    ? `<strong>Notes2TeX:</strong> Injected ${label} into Overleaf.`
+    : `<strong>Notes2TeX:</strong> Click inside Overleaf editor first.`;
 
-  toast.innerHTML = `<span>${icon}</span> <span>${text}</span>`;
+  toast.innerHTML = `<span>${text}</span>`;
   document.body.appendChild(toast);
 
   setTimeout(() => {

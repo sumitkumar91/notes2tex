@@ -1,7 +1,7 @@
 """
-Board2TeX - Multi-Modal Generative AI & LaTeX / TikZ Synthesis Engine
+Notes2TeX - Multi-Modal Generative AI & LaTeX / TikZ Synthesis Engine
 Interfaces with Google Gemini (or OpenAI / Anthropic) with specialized prompts
-to convert whiteboard sketches into compiled LaTeX documents and TikZ vector graphics.
+to convert notes and whiteboard sketches into compiled LaTeX documents and TikZ vector graphics.
 """
 
 import os
@@ -12,7 +12,7 @@ from google import genai
 from google.genai import types
 
 
-SYSTEM_PROMPT = """You are Board2TeX, an expert academic compiler that converts messy lecture hall whiteboard photos into publication-quality LaTeX documents.
+SYSTEM_PROMPT = """You are Notes2TeX, an expert academic compiler that converts handwritten notes, textbook snippets, and whiteboard photos into publication-quality LaTeX documents.
 
 You must analyze the whiteboard image and output strict JSON with the following structure:
 {
@@ -55,7 +55,7 @@ def process_whiteboard_with_gemini(
     api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Calls Gemini 2.5 Flash Vision to analyze and compile whiteboard to LaTeX and TikZ.
+    Calls Gemini 3 Flash Vision to analyze and compile whiteboard/notes to LaTeX and TikZ.
     """
     key = api_key or os.environ.get("GEMINI_API_KEY")
     if not key:
@@ -63,32 +63,50 @@ def process_whiteboard_with_gemini(
 
     client = genai.Client(api_key=key)
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[
-            types.Part.from_bytes(
-                data=image_bytes,
-                mime_type="image/jpeg",
-            ),
-            "Transcribe this textbook / whiteboard document into publication-ready LaTeX. Represent layout, paragraphs, and numbered items EXACTLY as shown. Do NOT use \\item or \\begin{itemize} for regular text or numbered paragraphs. Preserve all inline math."
-        ],
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            response_mime_type="application/json",
-            temperature=0.1,
-        )
-    )
+    # Primary model is Gemini 3 Flash, with fallback to 3.5-flash, 2.0-flash, and 2.5-flash
+    models_to_try = [
+        "gemini-3-flash-preview",
+        "gemini-3.5-flash",
+        "gemini-2.0-flash",
+        "gemini-2.5-flash"
+    ]
+    last_error = None
 
-    raw_text = response.text.strip()
-    if raw_text.startswith("```json"):
-        raw_text = raw_text[7:]
-    if raw_text.startswith("```"):
-        raw_text = raw_text[3:]
-    if raw_text.endswith("```"):
-        raw_text = raw_text[:-3]
+    for model_name in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    types.Part.from_bytes(
+                        data=image_bytes,
+                        mime_type="image/jpeg",
+                    ),
+                    "Transcribe this textbook / whiteboard document into publication-ready LaTeX. Represent layout, paragraphs, and numbered items EXACTLY as shown. Do NOT use \\item or \\begin{itemize} for regular text or numbered paragraphs. Preserve all inline math."
+                ],
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                    temperature=0.1,
+                )
+            )
 
-    data = json.loads(raw_text.strip())
-    return data
+            raw_text = response.text.strip()
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:]
+            if raw_text.startswith("```"):
+                raw_text = raw_text[3:]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3]
+
+            data = json.loads(raw_text.strip())
+            data["model_used"] = model_name
+            return data
+        except Exception as e:
+            last_error = e
+            print(f"[Warning] Model {model_name} failed: {e}. Trying fallback model...")
+            continue
+
+    raise last_error or RuntimeError("All Gemini models failed.")
 
 
 def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image: Any) -> Dict[str, Any]:
@@ -198,7 +216,7 @@ def generate_fallback_study_guide(cv_regions: List[Dict[str, Any]], image: Any) 
 \\usepackage{{amsmath, amssymb, tikz, geometry}}
 \\geometry{{margin=1in}}
 \\title{{\\textbf{{{lecture_title}}}}}
-\\author{{Compiled with Board2TeX Vision Engine}}
+\\author{{Compiled with Notes2TeX Vision Engine}}
 \\date{{\\today}}
 
 \\begin{{document}}

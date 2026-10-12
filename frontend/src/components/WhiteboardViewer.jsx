@@ -7,7 +7,9 @@ export default function WhiteboardViewer({
   regions = [],
   selectedRegionId,
   onSelectRegion,
-  metrics
+  metrics,
+  pdfInfo,
+  onPageChange
 }) {
   const [viewMode, setViewMode] = useState('segmented'); // 'segmented' | 'enhanced' | 'raw'
   const [hoveredRegionId, setHoveredRegionId] = useState(null);
@@ -19,53 +21,78 @@ export default function WhiteboardViewer({
     switch (type) {
       case 'math':
         return {
-          border: 'border-sky-500',
-          bg: 'bg-sky-500/15',
-          text: 'text-sky-300',
-          badge: 'bg-sky-500 text-slate-950',
-          ring: 'ring-sky-400'
+          border: 'border-black',
+          bg: 'bg-sky-400/25',
+          text: 'text-black',
+          badge: 'bg-[#93c5fd] text-black border border-black',
+          ring: 'ring-sky-500'
         };
       case 'diagram':
         return {
-          border: 'border-purple-500',
-          bg: 'bg-purple-500/15',
-          text: 'text-purple-300',
-          badge: 'bg-purple-500 text-white',
-          ring: 'ring-purple-400'
+          border: 'border-black',
+          bg: 'bg-purple-400/25',
+          text: 'text-black',
+          badge: 'bg-[#e9d5ff] text-black border border-black',
+          ring: 'ring-purple-500'
         };
       case 'text':
       default:
         return {
-          border: 'border-emerald-500',
-          bg: 'bg-emerald-500/15',
-          text: 'text-emerald-300',
-          badge: 'bg-emerald-500 text-slate-950',
-          ring: 'ring-emerald-400'
+          border: 'border-black',
+          bg: 'bg-emerald-400/25',
+          text: 'text-black',
+          badge: 'bg-[#bbf7d0] text-black border border-black',
+          ring: 'ring-emerald-500'
         };
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+    <div className="flex flex-col h-full bg-white border-2 border-black rounded-2xl overflow-hidden shadow-neo">
       
       {/* Top Bar / View Modes */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/40">
+      <div className="flex items-center justify-between px-4 py-3 border-b-2 border-black bg-[#fbf9f4]">
         <div className="flex items-center gap-2">
-          <Scan className="w-4 h-4 text-cyan-400" />
-          <span className="font-semibold text-sm text-slate-200">Vision Analysis Canvas</span>
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-            {regions.length} Regions Segmented
+          <Scan className="w-4 h-4 text-black" />
+          <span className="font-black text-sm text-black">Vision Analysis Canvas</span>
+          <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-lg bg-white text-black border-2 border-black shadow-neo-sm">
+            {regions.length} Regions
           </span>
         </div>
 
+        {/* PDF Page Controls (if PDF loaded) */}
+        {pdfInfo?.is_pdf && pdfInfo.total_pages > 1 && (
+          <div className="flex items-center gap-2 bg-[#fde047] border-2 border-black px-3 py-1 rounded-xl text-xs shadow-neo-sm">
+            <span className="text-black font-mono font-bold">Page {pdfInfo.current_page} of {pdfInfo.total_pages}</span>
+            <div className="flex items-center gap-1">
+              <button
+                disabled={pdfInfo.current_page <= 1}
+                onClick={() => onPageChange(pdfInfo.current_page - 1)}
+                className="px-2 py-0.5 rounded bg-white hover:bg-slate-100 disabled:opacity-40 text-black border border-black font-bold transition"
+                title="Previous PDF Page"
+              >
+                &larr;
+              </button>
+              <button
+                disabled={pdfInfo.current_page >= pdfInfo.total_pages}
+                onClick={() => onPageChange(pdfInfo.current_page + 1)}
+                className="px-2 py-0.5 rounded bg-white hover:bg-slate-100 disabled:opacity-40 text-black border border-black font-bold transition"
+                title="Next PDF Page"
+              >
+                &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* View Switcher Buttons */}
-        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+        <div className="flex items-center bg-[#f4efe6] border-2 border-black rounded-xl p-1 gap-1 text-xs shadow-neo-sm">
           <button
             onClick={() => setViewMode('segmented')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition font-bold border-2 ${
               viewMode === 'segmented'
-                ? 'bg-cyan-500/20 text-cyan-300 font-semibold'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#99f6e4] border-black text-black shadow-neo-sm'
+                : 'border-transparent text-slate-700 hover:text-black'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -74,10 +101,10 @@ export default function WhiteboardViewer({
           
           <button
             onClick={() => setViewMode('enhanced')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition font-bold border-2 ${
               viewMode === 'enhanced'
-                ? 'bg-cyan-500/20 text-cyan-300 font-semibold'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#99f6e4] border-black text-black shadow-neo-sm'
+                : 'border-transparent text-slate-700 hover:text-black'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -86,10 +113,10 @@ export default function WhiteboardViewer({
 
           <button
             onClick={() => setViewMode('raw')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition font-bold border-2 ${
               viewMode === 'raw'
-                ? 'bg-cyan-500/20 text-cyan-300 font-semibold'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#99f6e4] border-black text-black shadow-neo-sm'
+                : 'border-transparent text-slate-700 hover:text-black'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -99,9 +126,9 @@ export default function WhiteboardViewer({
       </div>
 
       {/* Canvas Area */}
-      <div className="relative flex-1 bg-slate-950 flex items-center justify-center p-3 overflow-hidden select-none">
+      <div className="relative flex-1 bg-[#f8f6f0] flex items-center justify-center p-3 overflow-hidden select-none">
         {displayImage ? (
-          <div className="relative max-w-full max-h-[580px] rounded-xl overflow-hidden shadow-2xl border border-slate-800">
+          <div className="relative max-w-full max-h-[580px] rounded-xl overflow-hidden shadow-neo border-2 border-black bg-white">
             <img
               src={displayImage}
               alt="Whiteboard Lecture"
@@ -131,19 +158,19 @@ export default function WhiteboardViewer({
                       style={{ top, left, width, height }}
                       className={`absolute cursor-pointer border-2 transition-all rounded-md flex flex-col justify-between ${style.border} ${style.bg} ${
                         isSelected
-                          ? `ring-4 ${style.ring} ring-opacity-80 scale-[1.01] z-20 shadow-lg`
+                          ? `ring-4 ${style.ring} ring-opacity-90 scale-[1.01] z-20 shadow-lg`
                           : isHovered
-                          ? 'ring-2 ring-white/50 z-10'
-                          : 'opacity-85 hover:opacity-100'
+                          ? 'ring-2 ring-black z-10'
+                          : 'opacity-90 hover:opacity-100'
                       }`}
                     >
                       {/* Top Tag Badge */}
                       <div className="flex items-center gap-1 p-1">
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shadow ${style.badge}`}>
+                        <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded shadow-sm ${style.badge}`}>
                           #{region.reading_order} {region.type.toUpperCase()}
                         </span>
                         {region.confidence && (
-                          <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-slate-900/80 text-slate-300 backdrop-blur-sm">
+                          <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-white text-black border border-black">
                             {Math.round(region.confidence * 100)}%
                           </span>
                         )}
@@ -151,7 +178,7 @@ export default function WhiteboardViewer({
 
                       {/* Bottom Label on Hover */}
                       {(isHovered || isSelected) && (
-                        <div className="bg-slate-950/90 text-white text-[11px] p-1.5 rounded-b font-medium backdrop-blur-sm border-t border-slate-700/60 truncate">
+                        <div className="bg-black text-white text-[11px] p-1.5 rounded-b font-medium border-t border-black truncate">
                           {region.label || region.type}
                         </div>
                       )}
@@ -162,35 +189,35 @@ export default function WhiteboardViewer({
             )}
           </div>
         ) : (
-          <div className="text-center p-8 text-slate-500">
-            <Scan className="w-12 h-12 mx-auto mb-3 opacity-30 text-cyan-400" />
-            <p className="text-sm">No whiteboard image loaded.</p>
-            <p className="text-xs text-slate-600 mt-1">Select a demo sample or upload a photo above.</p>
+          <div className="text-center p-8 text-slate-600 bg-white border-2 border-black rounded-2xl shadow-neo p-8 max-w-sm">
+            <Scan className="w-12 h-12 mx-auto mb-3 opacity-40 text-black" />
+            <p className="font-bold text-base text-black">No document loaded</p>
+            <p className="text-xs text-slate-600 mt-1">Select the CSE 320 demo sample or upload a photo / PDF above.</p>
           </div>
         )}
       </div>
 
       {/* Legend & Instructions Footer */}
-      <div className="px-4 py-2.5 bg-slate-950 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+      <div className="px-4 py-2.5 bg-[#fbf9f4] border-t-2 border-black flex flex-wrap items-center justify-between text-xs text-slate-700 gap-2">
         <div className="flex items-center gap-4">
-          <span className="font-medium text-slate-500">Legend:</span>
+          <span className="font-mono font-bold text-slate-800 uppercase text-[10px]">Legend:</span>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            <span className="text-slate-300">Text Notes</span>
+            <span className="w-3 h-3 rounded-full bg-[#bbf7d0] border border-black shadow-sm" />
+            <span className="font-bold text-black text-xs">Text Notes</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
-            <span className="text-slate-300">Math Equations</span>
+            <span className="w-3 h-3 rounded-full bg-[#93c5fd] border border-black shadow-sm" />
+            <span className="font-bold text-black text-xs">Math Equations</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-            <span className="text-slate-300">Diagram / TikZ</span>
+            <span className="w-3 h-3 rounded-full bg-[#e9d5ff] border border-black shadow-sm" />
+            <span className="font-bold text-black text-xs">Diagram / TikZ</span>
           </div>
         </div>
 
-        <div className="text-[11px] text-cyan-400/90 flex items-center gap-1">
+        <div className="text-[11px] text-slate-800 font-mono font-bold flex items-center gap-1">
           <Info className="w-3.5 h-3.5" />
-          <span>Click any box to inspect & jump to compiled section</span>
+          <span>Click any bounding box to inspect & jump to compiled section</span>
         </div>
       </div>
 

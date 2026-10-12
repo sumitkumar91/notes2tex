@@ -3,7 +3,7 @@ import { Copy, Check, Download, FileCode, CheckCircle2 } from 'lucide-react';
 
 export default function LatexEditor({
   latexContent = '',
-  title = 'board2tex_notes',
+  title = 'notes2tex_notes',
   onExportTex
 }) {
   const [copied, setCopied] = useState(false);
@@ -15,50 +15,50 @@ export default function LatexEditor({
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+    <div className="flex flex-col h-full bg-white border-2 border-black rounded-2xl overflow-hidden shadow-neo">
       {/* Header bar */}
-      <div className="px-5 py-3.5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+      <div className="px-5 py-3.5 border-b-2 border-black bg-[#fbf9f4] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileCode className="w-4 h-4 text-cyan-400" />
-          <span className="font-semibold text-sm text-slate-200">Raw LaTeX Source (.tex)</span>
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-            {latexContent.split('\n').length} Lines
+          <FileCode className="w-4 h-4 text-black" />
+          <span className="font-black text-sm text-black">LaTeX Source (.tex)</span>
+          <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-lg bg-white border-2 border-black shadow-neo-sm text-black">
+            {latexContent ? latexContent.split('\n').length : 0} Lines
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white hover:bg-[#fde047] text-black border-2 border-black shadow-neo-sm font-bold transition"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-black" />}
             <span>{copied ? 'Copied' : 'Copy All'}</span>
           </button>
 
           <button
             onClick={onExportTex}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#99f6e4] hover:bg-[#5eead4] text-black border-2 border-black shadow-neo-sm font-bold transition"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5 text-black" />
             <span>Download .tex</span>
           </button>
         </div>
       </div>
 
       {/* Editor / Code area */}
-      <div className="flex-1 bg-slate-950 p-4 overflow-y-auto">
-        <pre className="text-xs font-mono text-cyan-300 leading-relaxed whitespace-pre-wrap select-text">
+      <div className="flex-1 bg-[#1e2022] p-5 overflow-y-auto">
+        <pre className="text-xs font-mono text-[#fef08a] leading-relaxed whitespace-pre-wrap select-text">
           {latexContent || '% No LaTeX content generated yet'}
         </pre>
       </div>
 
       {/* Compiler status footer */}
-      <div className="px-4 py-2 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400">
-        <div className="flex items-center gap-1.5 text-emerald-400">
-          <CheckCircle2 className="w-3.5 h-3.5" />
+      <div className="px-4 py-2.5 border-t-2 border-black bg-[#fbf9f4] flex items-center justify-between text-xs text-slate-800 font-mono">
+        <div className="flex items-center gap-1.5 font-bold text-black">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           <span>Valid LaTeX 2e Document Class article</span>
         </div>
-        <span className="text-slate-500 font-mono text-[11px]">Ready for Overleaf / pdflatex</span>
+        <span className="font-bold text-slate-600 text-[11px]">Ready for Overleaf / pdflatex</span>
       </div>
     </div>
   );

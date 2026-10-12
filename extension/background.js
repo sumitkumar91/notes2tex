@@ -1,5 +1,5 @@
 /**
- * Board2TeX - Background Service Worker (Manifest V3)
+ * Notes2TeX - Background Service Worker (Manifest V3)
  * Orchestrates screen capture, backend communication, and Overleaf tab injection.
  */
 
@@ -44,7 +44,7 @@ async function handleCroppedArea(bounds) {
     // 2. Crop image to selected bounds using canvas
     const croppedBase64 = await cropImageData(dataUrl, bounds);
 
-    // 3. Send to Board2TeX backend
+    // 3. Send to Notes2TeX backend
     const res = await fetch(`${BACKEND_URL}/api/process`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,7 +56,7 @@ async function handleCroppedArea(bounds) {
       throw new Error(data.detail || "Backend processing failed");
     }
 
-    const latexText = data?.study_guide?.latex_full || "% Compiled with Board2TeX\n";
+    const latexText = data?.study_guide?.latex_full || "% Compiled with Notes2TeX\n";
 
     // 4. Find Overleaf tab and inject
     const overleafTabs = await chrome.tabs.query({ url: "*://*.overleaf.com/project/*" });
@@ -74,10 +74,10 @@ async function handleCroppedArea(bounds) {
       });
     } else {
       // Fallback: Copy to clipboard if no Overleaf tab is open
-      console.warn("[Board2TeX] No active Overleaf tab found.");
+      console.warn("[Notes2TeX] No active Overleaf tab found.");
     }
   } catch (err) {
-    console.error("[Board2TeX] Snipping error:", err);
+    console.error("[Notes2TeX] Snipping error:", err);
   }
 }
 

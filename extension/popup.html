@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Board2TeX</title>
+  <title>Notes2TeX</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -109,9 +109,9 @@
 </head>
 <body>
   <div class="header">
-    <div class="logo">📐</div>
+    <div class="logo" style="font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">N2T</div>
     <div class="title-box">
-      <h1>Board2TeX</h1>
+      <h1>Notes2TeX</h1>
       <p>1-Click Overleaf Assistant</p>
     </div>
   </div>
@@ -128,20 +128,20 @@
   </div>
 
   <button id="btn-snip" class="btn btn-primary">
-    <span>✂️</span> Snip Area on Screen
+    <span>Snip Area on Screen</span>
   </button>
 
   <button id="btn-sample" class="btn btn-secondary">
-    <span>⚡</span> Inject Demo Sample to Overleaf
+    <span>Inject Demo Sample to Overleaf</span>
   </button>
 
-  <input type="file" id="file-input" accept="image/*" style="display:none;">
+  <input type="file" id="file-input" accept="image/*,application/pdf,.pdf" style="display:none;">
   <button id="btn-upload" class="btn btn-secondary">
-    <span>📁</span> Upload Photo & Inject
+    <span>Upload Photo / PDF & Inject</span>
   </button>
 
   <div id="loader" class="loader">
-    <span>⏳ Compiling LaTeX & TikZ...</span>
+    <span>Compiling LaTeX & TikZ...</span>
   </div>
 
   <div class="hotkey-hint">

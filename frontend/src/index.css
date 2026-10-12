@@ -4,30 +4,71 @@
 
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 code, pre, .font-mono {
   font-family: 'Fira Code', monospace;
 }
 
-/* Custom scrollbar */
+/* Neo-Brutalist Grid Background */
+.bg-grid-notebook {
+  background-color: #f8f6f0;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Neo-Brutalist Shadows */
+.shadow-neo-sm {
+  box-shadow: 2px 2px 0px 0px #000000;
+}
+
+.shadow-neo {
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
+.shadow-neo-lg {
+  box-shadow: 6px 6px 0px 0px #000000;
+}
+
+/* Neo-Brutalist Interactive Buttons */
+.btn-neo {
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px 0px #000000;
+  transition: all 0.12s ease;
+}
+
+.btn-neo:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px 0px #000000;
+}
+
+.btn-neo:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px #000000;
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #f1ede4;
+  border-left: 1px solid #e2ddd3;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
+  border: 1px solid #000;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
 }
 
-/* Print Styles for 1-Click Study Sheet PDF Export */
+/* Print Styles */
 @media print {
   body {
     background-color: white !important;
@@ -38,11 +79,5 @@ code, pre, .font-mono {
   }
   .print-only {
     display: block !important;
-  }
-  .printable-card {
-    border: none !important;
-    background: transparent !important;
-    color: black !important;
-    box-shadow: none !important;
   }
 }

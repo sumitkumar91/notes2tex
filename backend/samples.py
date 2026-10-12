@@ -1,6 +1,6 @@
 """
-Board2TeX - Pre-packaged Real STEM Lecture Whiteboard Samples
-Generates realistic whiteboard imagery with authentic marker textures,
+Notes2TeX - Pre-packaged Real STEM Lecture Notes Samples
+Generates realistic whiteboard & note imagery with authentic marker textures,
 accompanied by pre-parsed LaTeX math, TikZ diagrams, and SVG vectors.
 """
 
@@ -191,7 +191,7 @@ def get_sample_cse320_payload() -> Dict[str, Any]:
 \geometry{margin=1in}
 
 \title{\textbf{CSE 320: Dynamic Memory Allocation \& Heap Layout}}
-\author{Compiled with Board2TeX}
+\author{Compiled with Notes2TeX}
 \date{Stony Brook University $\cdot$ Department of Computer Science}
 
 \begin{document}

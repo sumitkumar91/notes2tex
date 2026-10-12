@@ -1,5 +1,5 @@
 """
-Board2TeX - Computer Vision Preprocessing & Layout Segmentation Engine
+Notes2TeX - Computer Vision Preprocessing & Layout Segmentation Engine
 Implements perspective rectification, glare suppression, adaptive contrast,
 and multi-modal region classification (Text vs Math vs Diagram).
 """

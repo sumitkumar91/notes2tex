@@ -1,13 +1,13 @@
 /**
- * Board2TeX - On-Screen Snipping Tool Overlay
+ * Notes2TeX - On-Screen Snipping Tool Overlay
  * Allows user to drag-select an area of their screen to compile directly into Overleaf.
  */
 
 (function () {
-  if (document.getElementById("board2tex-snipper-overlay")) return;
+  if (document.getElementById("notes2tex-snipper-overlay")) return;
 
   const overlay = document.createElement("div");
-  overlay.id = "board2tex-snipper-overlay";
+  overlay.id = "notes2tex-snipper-overlay";
   overlay.style.cssText = `
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -36,7 +36,7 @@
     gap: 8px;
     pointer-events: none;
   `;
-  banner.innerHTML = "<span>📐 Board2TeX:</span> Drag a rectangle over notes or equations (Press Esc to cancel)";
+  banner.innerHTML = "<span>Notes2TeX:</span> Drag a rectangle over notes or equations (Press Esc to cancel)";
   overlay.appendChild(banner);
 
   const box = document.createElement("div");

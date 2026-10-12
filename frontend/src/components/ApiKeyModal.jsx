@@ -18,77 +18,76 @@ export default function ApiKeyModal({ isOpen, onClose, apiKey, onSaveApiKey }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-[#fbf9f4] border-2 border-black rounded-2xl max-w-md w-full p-6 shadow-neo-lg relative text-black">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+          className="absolute top-4 right-4 text-black hover:bg-[#fde047] p-1.5 rounded-lg border-2 border-black shadow-neo-sm transition"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Modal Header */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-            <Key className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-[#fde047] border-2 border-black shadow-neo-sm flex items-center justify-center text-black">
+            <Key className="w-5 h-5 text-black" />
           </div>
           <div>
-            <h3 className="font-bold text-base text-white">Gemini API Key Configuration</h3>
-            <p className="text-xs text-slate-400">For live zero-shot whiteboard transcription</p>
+            <h3 className="font-black text-lg text-black">Gemini API Key</h3>
+            <p className="text-xs font-mono font-bold text-slate-600">Zero-shot multi-modal synthesis</p>
           </div>
         </div>
 
         {/* Description */}
-        <p className="text-xs text-slate-300 leading-relaxed mb-4">
-          Board2TeX includes pre-loaded interactive STEM samples that work instantly with zero setup. 
+        <p className="text-xs text-slate-700 font-medium leading-relaxed mb-4">
+          Notes2TeX includes pre-loaded interactive STEM samples that work instantly with zero setup. 
           To upload and transcribe your own live lecture photos, enter a Google Gemini API key below:
         </p>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label className="block text-xs font-mono font-bold uppercase tracking-wider text-black mb-1.5">
               Google Gemini API Key
             </label>
             <input
               type="password"
-              placeholder="AIzaSy..."
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white border-2 border-black text-sm font-mono text-black shadow-neo-sm focus:outline-none focus:ring-2 focus:ring-[#fde047] transition"
             />
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-500">
-            <span className="flex items-center gap-1 text-slate-400">
-              <Shield className="w-3.5 h-3.5 text-emerald-400" /> Stored locally in your browser
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1 font-medium text-slate-700">
+              <Shield className="w-3.5 h-3.5 text-emerald-600" /> Stored locally in your browser
             </span>
             <a
               href="https://aistudio.google.com/app/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 hover:underline flex items-center gap-0.5"
+              className="text-black font-bold underline flex items-center gap-0.5 hover:text-slate-700"
             >
               Get free key <ExternalLink className="w-3 h-3" />
             </a>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t-2 border-black">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800 transition"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-black bg-white hover:bg-slate-100 border-2 border-black shadow-neo-sm transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/20 transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-black bg-[#99f6e4] hover:bg-[#5eead4] text-black border-2 border-black shadow-neo-sm transition flex items-center gap-1.5"
             >
               {savedSuccess ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-300" />
+                  <Check className="w-3.5 h-3.5 text-black" />
                   <span>Saved!</span>
                 </>
               ) : (
