@@ -2,15 +2,13 @@
   "manifest_version": 3,
   "name": "Notes2TeX — 1-Click Overleaf LaTeX Injector",
   "version": "1.0.0",
-  "description": "Snap a screenshot of any handwritten note or whiteboard and automatically inject compiled LaTeX & TikZ into Overleaf.",
+  "description": "Upload handwritten notes or PDFs to automatically compile LaTeX & TikZ and inject directly into Overleaf.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "permissions": [
-    "activeTab",
-    "scripting",
     "storage",
     "tabs"
   ],
@@ -34,14 +32,5 @@
       ],
       "run_at": "document_end"
     }
-  ],
-  "commands": {
-    "snip_to_overleaf": {
-      "suggested_key": {
-        "default": "Alt+Shift+X",
-        "mac": "Command+Shift+X"
-      },
-      "description": "Snip area and inject to Overleaf"
-    }
-  }
+  ]
 }

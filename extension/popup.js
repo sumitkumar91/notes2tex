@@ -7,7 +7,6 @@ const BACKEND_URL = "http://127.0.0.1:8008";
 document.addEventListener("DOMContentLoaded", async () => {
   const overleafBadge = document.getElementById("overleaf-badge");
   const backendBadge = document.getElementById("backend-badge");
-  const btnSnip = document.getElementById("btn-snip");
   const btnSample = document.getElementById("btn-sample");
   const btnUpload = document.getElementById("btn-upload");
   const fileInput = document.getElementById("file-input");
@@ -42,13 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     backendBadge.className = "badge badge-warn";
   }
 
-  // 3. Snip Area button
-  btnSnip.addEventListener("click", () => {
-    chrome.runtime.sendMessage({ action: "TRIGGER_SNIP" });
-    window.close();
-  });
-
-  // 4. Inject Demo Sample button (CSE 320 Virtual Memory & Heap Layout)
+  // 3. Inject Demo Sample button (CSE 320 Virtual Memory & Heap Layout)
   btnSample.addEventListener("click", async () => {
     loader.style.display = "block";
     try {
@@ -76,7 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 5. Upload Photo & Inject button
+  // 4. Upload Photo & Inject button
   btnUpload.addEventListener("click", () => fileInput.click());
 
   fileInput.addEventListener("change", async (e) => {

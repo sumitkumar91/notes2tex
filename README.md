@@ -58,7 +58,7 @@ Notes2TeX implements an authentic multi-stage Computer Vision and Multimodal Gen
             ┌────────────────┴────────────────┐
             ▼                                 ▼
    [React Studio on :5555]        [1-Click Overleaf Extension]
-   - Bounding-box canvas          - Browser crosshair snip
+   - Bounding-box canvas          - Upload photo / PDF & inject
    - Live KaTeX preview           - Direct CodeMirror DOM paste
    - TikZ vector rendering        - Zero manual copy-paste
    - .tex source editor
@@ -85,9 +85,9 @@ Notes2TeX implements an authentic multi-stage Computer Vision and Multimodal Gen
 - **Export Suite:** 1-Click download of raw `.tex` source files, clipboard copying, and print-ready PDF export.
 
 ### 4. 1-Click Overleaf Chrome Extension (Manifest V3)
-- Press **`Cmd+Shift+X`** (or `Alt+Shift+X` on Windows/Linux) anywhere on your screen.
-- Drag a selection box over any lecture slide, textbook passage, or handwritten note.
-- The extension captures the region, compiles it through the backend pipeline, and programmatically injects the compiled LaTeX directly into your active Overleaf editor tab at your cursor position—zero copy-pasting required.
+- Click the Notes2TeX extension icon while working in any Overleaf project.
+- Upload any handwritten photo or lecture PDF (or inject the pre-loaded CSE sample).
+- The extension communicates with your local vision engine, compiles the note into high-quality LaTeX and TikZ, and programmatically injects it directly into your active Overleaf editor tab at your cursor position—zero copy-pasting required.
 
 ---
 
@@ -117,8 +117,7 @@ notes2tex/
 │   ├── manifest.json      # Chrome Manifest V3 configuration
 │   ├── popup.html         # Extension popup interface
 │   ├── popup.js           # Extension controller & Overleaf tab detector
-│   ├── snipper.js         # On-screen drag-to-snip overlay
-│   ├── background.js      # Service worker, offscreen canvas crop & API caller
+│   ├── background.js      # Background service worker
 │   └── content.js         # CodeMirror 6 DOM injector for Overleaf tabs
 ├── start.sh               # Concurrent startup script for backend & frontend
 ├── .gitignore             # Strict secret isolation (.env never tracked)
@@ -162,7 +161,7 @@ This automatically initializes the virtual environment, installs dependencies, a
 2. Enable **Developer mode** in the top right.
 3. Click **Load unpacked** in the top left.
 4. Select the `extension/` folder inside the `notes2tex` repository.
-5. Open any project on [Overleaf](https://www.overleaf.com), press **`Cmd+Shift+X`**, drag a crosshair over any visual note on your screen, and watch the compiled LaTeX inject directly into your document.
+5. Open any project on [Overleaf](https://www.overleaf.com), open the Notes2TeX extension popup, upload a photo/PDF or click **Inject Demo Sample**, and watch the compiled LaTeX inject directly into your document.
 
 ---
 

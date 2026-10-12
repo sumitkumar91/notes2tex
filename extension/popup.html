@@ -127,25 +127,17 @@
     </div>
   </div>
 
-  <button id="btn-snip" class="btn btn-primary">
-    <span>Snip Area on Screen</span>
+  <input type="file" id="file-input" accept="image/*,application/pdf,.pdf" style="display:none;">
+  <button id="btn-upload" class="btn btn-primary">
+    <span>Upload Photo / PDF & Inject</span>
   </button>
 
   <button id="btn-sample" class="btn btn-secondary">
     <span>Inject Demo Sample to Overleaf</span>
   </button>
 
-  <input type="file" id="file-input" accept="image/*,application/pdf,.pdf" style="display:none;">
-  <button id="btn-upload" class="btn btn-secondary">
-    <span>Upload Photo / PDF & Inject</span>
-  </button>
-
   <div id="loader" class="loader">
     <span>Compiling LaTeX & TikZ...</span>
-  </div>
-
-  <div class="hotkey-hint">
-    Shortcut: <kbd>Cmd+Shift+X</kbd> to snip anywhere
   </div>
 
   <script src="popup.js"></script>

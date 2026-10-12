@@ -290,7 +290,7 @@ export default function App() {
           <div className="p-3.5 rounded-xl bg-white border-2 border-black shadow-neo-sm transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-neo">
             <h3 className="font-black text-sm text-black mb-1">1-Click Overleaf & PDF</h3>
             <p className="text-xs text-slate-800 leading-snug font-medium">
-              Multi-page PDF slide deck pagination, plus Chrome extension snipping that injects directly into Overleaf.
+              Multi-page PDF slide deck pagination, plus Chrome extension that injects directly into Overleaf.
             </p>
           </div>
         </div>
